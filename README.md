@@ -32,8 +32,9 @@ The script clones a pinned SuperSplat commit into `.build/supersplat`, builds it
 
 ## Not there yet
 
-- Saving and exporting. SuperSplat hands saves to the browser as downloads, and the app does not handle those yet
-- Z-up scenes open lying on their side. Rotate them in SuperSplat's Transform panel
+- Streaming saves. Saves and exports go through a save panel, but SuperSplat builds the whole file in memory first, so an uncompressed export of a very large scene may not fit
+
+Z-up scenes open lying on their side. The app does not rotate them for you; set the rotation in SuperSplat's Transform panel.
 
 ## Credits
 

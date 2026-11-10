@@ -32,7 +32,7 @@ $B --stochastic disabled --snapshot out.png scene.ply   # 開いて落ち着い�
 $B --snapshot out.png --eval 'return window.scene.events.invoke("view.stochastic")' scene.ply
 ```
 
-`--eval` の中身はページ内の async 関数の本体として実行される。`window.scene` と `window.scene.events` が SuperSplat の入口。
+`--eval` の中身はページ内の async 関数の本体として実行される。`--downloads <dir>` を付けると、ページが保存するファイルを保存パネルなしでそのフォルダに書き、`SAVED <path>` を出す。`window.scene` と `window.scene.events` が SuperSplat の入口。
 
 SuperSplat の保存設定を初期状態に戻す：
 
@@ -42,16 +42,16 @@ $B --snapshot /tmp/x.png --eval 'localStorage.removeItem("supersplat:preferences
 
 ## ハマりどころ（実体験）
 
-- **splat ファイルを独自スキームや HTTP で流さない**。 `WKURLSchemeHandler` には受け手の読む速さに合わせる仕組みがなく、11 GB を流すと WebKit 側に溜まる。SuperSplat は URL から読むとき Range 対応を調べ、非対応ならファイル全体をメモリに落とす。なのでページに本物の `File` を渡している：ページが `<input type=file>` を `click()` し、アプリが `runOpenPanelWith` の応答としてパスを返す（`filesForNextChooser`）。`File` は必要な分だけディスクから読まれる
-- **`evaluateJavaScript` から呼んだ `input.click()` はファイル選択を開ける**。 ユーザー操作として扱われる。上の受け渡しはこれに依存している
-- **`--snapshot`（`takeSnapshot`）は stochastic 描画のあと、実画面と違う画を出す**。 実画面は止まると並べ替え描画のきれいな画に戻るが、スナップショットにはざらついた画が写る。レンダラの状態（`projectedSplatRenderer.stochastic`、ブレンド設定）は正しい値を返すので、状態を読んでも気づけない。これを WebKit の不具合と誤診して既定を `disabled` に変えかけた。画の確認に使うときは `--stochastic disabled` を付ける。実画面の確認は人の目でやる
-- **青い点が一面に出たら Edit View**。 SuperSplat の機能で、Tab キーで切り替わり、`view.setCenters` などの表示オーバーレイを操作しても自動でオンになる。`localStorage` の `supersplat:preferences` に保存されて次回起動に残る。検証中に意図せずオンになり、別の不具合に見えた。上の初期化コマンドで戻す
-- **`view.setStochastic` などのイベントを `--eval` で発火すると保存設定が書き換わる**。 確認のつもりの操作が次回起動に残る
-- **SuperSplat の既定 `auto` は巨大シーンでカクつく**。 並べ替えありの 1 フレームが 60 ms を超えたときだけ移動中の stochastic 描画に切り替わる。40〜50 ms の視点では切り替わらず 20 fps 前後になる。なので起動時に `movement` を設定している。この設定は起動のたびに上書きされ、SuperSplat の Preferences で変えても次回に残らない
-- **`disabled` にすると SuperSplat が GPU タイマーを止める**。 `scene.frameTimings.gpu` が 0 になる。`--bench` の並べ替え計測は `auto` のまま `scene.autoEngageMs = 1e9` にしてタイマーを生かしている
-- **読み込み直後にシーンが見えないことがある**。 原点から遠いデータではカメラの視界に入らない。開いたあと `camera.focus` を発火している。外れ値の splat があると `camera.focus` は引きすぎる
-- **メニューに Undo / Redo / Select All を足さない**。 キー入力がメニューに取られてページに届かなくなる。SuperSplat はそれらのキーを自前の編集履歴と選択に使う
-- **Sparkle は `.app` の外では動かない**。 `.build/release/SplatShell` を直接実行すると `Bundle.main.bundleIdentifier` が nil なので、アップデータを作らない。`--bench` `--snapshot` `--eval` のときも作らない（更新ダイアログが自動実行の邪魔になる）
+- **splat ファイルを独自スキームや HTTP で流さない**。`WKURLSchemeHandler` には受け手の読む速さに合わせる仕組みがなく、11 GB を流すと WebKit 側に溜まる。SuperSplat は URL から読むとき Range 対応を調べ、非対応ならファイル全体をメモリに落とす。なのでページに本物の `File` を渡している：ページが `<input type=file>` を `click()` し、アプリが `runOpenPanelWith` の応答としてパスを返す（`filesForNextChooser`）。`File` は必要な分だけディスクから読まれる
+- **`evaluateJavaScript` から呼んだ `input.click()` はファイル選択を開ける**。ユーザー操作として扱われる。上の受け渡しはこれに依存している
+- **`--snapshot`（`takeSnapshot`）は stochastic 描画のあと、実画面と違う画を出す**。実画面は止まると並べ替え描画のきれいな画に戻るが、スナップショットにはざらついた画が写る。レンダラの状態（`projectedSplatRenderer.stochastic`、ブレンド設定）は正しい値を返すので、状態を読んでも気づけない。これを WebKit の不具合と誤診して既定を `disabled` に変えかけた。画の確認に使うときは `--stochastic disabled` を付ける。実画面の確認は人の目でやる
+- **青い点が一面に出たら Edit View**。SuperSplat の機能で、Tab キーで切り替わり、`view.setCenters` などの表示オーバーレイを操作しても自動でオンになる。`localStorage` の `supersplat:preferences` に保存されて次回起動に残る。検証中に意図せずオンになり、別の不具合に見えた。上の初期化コマンドで戻す
+- **`view.setStochastic` などのイベントを `--eval` で発火すると保存設定が書き換わる**。確認のつもりの操作が次回起動に残る
+- **SuperSplat の既定 `auto` は巨大シーンでカクつく**。並べ替えありの 1 フレームが 60 ms を超えたときだけ移動中の stochastic 描画に切り替わる。40〜50 ms の視点では切り替わらず 20 fps 前後になる。なので保存された設定がないとき、起動時に `movement` を設定している。SuperSplat はこの値を Preferences と一緒に保存するので、保存値があるときは触らない（ユーザーが Preferences で選んだ値が残る）。`--stochastic` を付けたときだけ上書きする
+- **`disabled` にすると SuperSplat が GPU タイマーを止める**。`scene.frameTimings.gpu` が 0 になる。`--bench` の並べ替え計測は `auto` のまま `scene.autoEngageMs = 1e9` にしてタイマーを生かしている
+- **読み込み直後にシーンが見えないことがある**。原点から遠いデータではカメラの視界に入らない。開いたあと `camera.focus` を発火している。外れ値の splat があると `camera.focus` は引きすぎる
+- **メニューに Undo / Redo / Select All を足さない**。キー入力がメニューに取られてページに届かなくなる。SuperSplat はそれらのキーを自前の編集履歴と選択に使う
+- **Sparkle は `.app` の外では動かない**。`.build/release/SplatShell` を直接実行すると `Bundle.main.bundleIdentifier` が nil なので、アップデータを作らない。`--bench` `--snapshot` `--eval` `--downloads` のときも作らない（更新ダイアログが自動実行の邪魔になる）
 - **独自スキーム `splat://app` は secure context 扱いで、WebGPU が使える**（macOS 26.6 で確認）。HTTP サーバに戻す必要はない
 
 リリース関連（Canopy で実体験、スクリプトごと持ってきた）：
@@ -79,9 +79,12 @@ M4 Max / 64 GB、macOS 26.6、描画 1924 × 1385、SH 3 次の無圧縮 PLY、`
 
 ## 残タスク
 
-- 保存・書き出しの受け口がない。SuperSplat は保存をダウンロードとして出すが、`WKDownloadDelegate` を実装していないので何も起きない
-- Z-up のデータは横倒しで出る。自動補正していない
-- stochastic 設定を SuperSplat の Preferences に従わせる
+- 保存は SuperSplat のダウンロード経路（`<a download>` のクリック → `WKDownloadDelegate` → 保存パネル）で動く。ただし SuperSplat は結果を全部メモリに溜めてから渡すので、巨大シーンの PLY 書き出しはメモリに収まらない可能性がある。確認したのは画像の書き出し（`render.image`）だけで、splat の書き出しとプロジェクト保存は未確認。ディスクへ逐次書き出すには、ページ側に `showSaveFilePicker` 相当を用意してネイティブへ流す必要がある
+- ウィンドウへのドラッグ&ドロップで開けるかは未確認
 - `--snapshot` が stochastic のあと実画面と食い違う件
 - リリースビルドのバイナリにツールチェーンの絶対パスの rpath が入っている（`otool -l` で見える）。動作には影響なし、公証で問題になるかは未確認
 - ライセンス未設定
+
+やらないと決めたこと：
+
+- Z-up データの自動回転。Z-up のデータは横倒しで出る（X 軸 −90° で地面が水平になることは確認済み）が、アプリが勝手に回すとデータ本来の向きと区別がつかなくなる。向きは SuperSplat の Transform でユーザーが決める

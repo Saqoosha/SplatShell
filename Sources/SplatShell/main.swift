@@ -5,11 +5,13 @@ import WebKit
 // A native window around a bundled SuperSplat build.
 //
 //   SplatShell [--web-root <dir>] [--pixels <W>x<H>] [--stochastic <mode>]
-//              [--bench <splat file>] [--snapshot <png>] [--eval <js>] [<splat file> ...]
+//              [--bench <splat file>] [--snapshot <png>] [--eval <js>] [--downloads <dir>]
+//              [<splat file> ...]
 //
 // --web-root overrides the SuperSplat build inside the app bundle.
-// --stochastic sets SuperSplat's stochastic rendering mode: movement (default),
-// auto, disabled or enabled.
+// --stochastic sets SuperSplat's stochastic rendering mode: movement, auto,
+// disabled or enabled. Without it the mode stored in SuperSplat's preferences
+// applies, and movement when none is stored.
 // --bench opens the file, runs a fixed set of render measurements, prints one
 // JSON line prefixed with "RESULT " and exits.
 // --snapshot <png> writes the window contents to the file once the first
@@ -19,13 +21,16 @@ import WebKit
 // --eval <js> runs the text as the body of an async function in the page once
 // the first opened file has settled, and prints what it returns (before the
 // snapshot, when both are given).
+// --downloads <dir> writes files the page saves into the directory without
+// asking, and prints "SAVED <path>" for each.
 
 struct Options {
     var webRoot: URL?
     var bench: URL?
     var snapshot: URL?
     var eval: String?
-    var stochastic = "movement"
+    var downloads: URL?
+    var stochastic: String?
     var pixels: (width: Int, height: Int)?
     var files: [URL] = []
 
@@ -41,6 +46,8 @@ struct Options {
                 if let v = it.next() { snapshot = URL(fileURLWithPath: v) }
             case "--eval":
                 eval = it.next()
+            case "--downloads":
+                if let v = it.next() { downloads = URL(fileURLWithPath: v, isDirectory: true) }
             case "--stochastic":
                 if let v = it.next(), ["disabled", "enabled", "movement", "auto"].contains(v) { stochastic = v }
             case "--pixels":
@@ -76,11 +83,18 @@ let shellScript = #"""
   shell.ready = (async () => {
     while (!(window.scene && window.editor)) await wait(50);
     await wait(300);
+    const events = window.scene.events, config = window.__shellConfig;
+
     // Scenes of tens of millions of splats cannot be sorted every frame at
-    // display rate, so the default here is 'movement': the unsorted stochastic
-    // mode while the camera moves, one sorted frame when it stops. SuperSplat's
-    // own default, 'auto', only does that once a sorted frame takes over 60 ms.
-    window.scene.events.fire('view.setStochastic', window.__shellConfig.stochastic);
+    // display rate, so the starting value here is 'movement': the unsorted
+    // stochastic mode while the camera moves, one sorted frame when it stops.
+    // SuperSplat's own default, 'auto', only does that once a sorted frame
+    // takes over 60 ms. SuperSplat stores the mode with its preferences, so a
+    // stored value (the user's choice in Preferences) is left alone.
+    let stored;
+    try { stored = (JSON.parse(localStorage.getItem('supersplat:preferences') || '{}').values || {})['view.stochastic']; } catch (e) {}
+    if (config.stochastic) events.fire('view.setStochastic', config.stochastic);
+    else if (stored === undefined) events.fire('view.setStochastic', 'movement');
     post('ready', '');
   })();
 
@@ -221,7 +235,9 @@ let benchScript = #"""
 })();
 """#
 
-final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
+    WKDownloadDelegate
+{
     let options: Options
     var window: NSWindow!
     var webView: WKWebView!
@@ -232,6 +248,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     var queuedFiles: [URL] = []
     /// Files the next file chooser the page opens is answered with.
     var filesForNextChooser: [URL]?
+    /// Where each save in progress is being written.
+    var downloadTargets: [ObjectIdentifier: URL] = [:]
 
     var pollTimer: Timer?
     var lastState = ""
@@ -245,7 +263,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let scripted = options.bench != nil || options.snapshot != nil || options.eval != nil
+        let scripted = options.bench != nil || options.snapshot != nil || options.eval != nil || options.downloads != nil
         if Bundle.main.bundleIdentifier != nil, !scripted {
             updaterController = SPUStandardUpdaterController(
                 startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
@@ -262,7 +280,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         config.userContentController.add(self, name: "shell")
         config.userContentController.addUserScript(
             WKUserScript(
-                source: "window.__shellConfig = { stochastic: '\(options.stochastic)' };",
+                source: "window.__shellConfig = { stochastic: \(options.stochastic.map { "'\($0)'" } ?? "null") };",
                 injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController.addUserScript(
             WKUserScript(source: shellScript, injectionTime: .atDocumentStart, forMainFrameOnly: true))
@@ -395,6 +413,79 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         default:
             break
         }
+    }
+
+    // MARK: Navigation, links and downloads
+
+    func webView(
+        _ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        // SuperSplat saves by clicking an <a download> that points at a blob
+        if navigationAction.shouldPerformDownload {
+            decisionHandler(.download)
+        } else if let url = navigationAction.request.url, ["http", "https", "mailto"].contains(url.scheme ?? "") {
+            // the app itself lives on splat://; anything on the web belongs in the browser
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+        } else {
+            decisionHandler(.allow)
+        }
+    }
+
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        download.delegate = self
+    }
+
+    /// Links that ask for a new window (target=_blank, window.open).
+    func webView(
+        _ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
+        for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+        if let url = navigationAction.request.url, ["http", "https", "mailto"].contains(url.scheme ?? "") {
+            NSWorkspace.shared.open(url)
+        }
+        return nil
+    }
+
+    func download(
+        _ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String,
+        completionHandler: @escaping (URL?) -> Void
+    ) {
+        if let directory = options.downloads {
+            let target = directory.appendingPathComponent(suggestedFilename)
+            // WKDownload refuses a destination that exists
+            try? FileManager.default.removeItem(at: target)
+            downloadTargets[ObjectIdentifier(download)] = target
+            completionHandler(target)
+            return
+        }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = suggestedFilename
+        panel.canCreateDirectories = true
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let target = panel.url else { return completionHandler(nil) }
+            // the panel has already asked before replacing an existing file
+            try? FileManager.default.removeItem(at: target)
+            self?.downloadTargets[ObjectIdentifier(download)] = target
+            completionHandler(target)
+        }
+    }
+
+    func downloadDidFinish(_ download: WKDownload) {
+        if let target = downloadTargets.removeValue(forKey: ObjectIdentifier(download)) {
+            emit("SAVED \(target.path)")
+        }
+    }
+
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+        downloadTargets.removeValue(forKey: ObjectIdentifier(download))
+        emit("SAVE FAILED \(error.localizedDescription)")
+        guard options.downloads == nil else { return }
+        let alert = NSAlert()
+        alert.messageText = "Could not save the file"
+        alert.informativeText = error.localizedDescription
+        alert.beginSheetModal(for: window)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
