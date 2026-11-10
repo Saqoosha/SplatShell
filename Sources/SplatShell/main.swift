@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 import WebKit
 
 // A native window around a bundled SuperSplat build.
@@ -235,11 +236,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     var pollTimer: Timer?
     var lastState = ""
 
+    /// Nil when run outside an .app bundle (Sparkle needs one) and in the
+    /// scripted modes, where an update dialog would get in the way.
+    var updaterController: SPUStandardUpdaterController?
+
     init(options: Options) {
         self.options = options
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let scripted = options.bench != nil || options.snapshot != nil || options.eval != nil
+        if Bundle.main.bundleIdentifier != nil, !scripted {
+            updaterController = SPUStandardUpdaterController(
+                startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+        }
         buildMenu()
 
         let scale = NSScreen.main?.backingScaleFactor ?? 2
@@ -461,6 +471,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About SplatShell", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        if let updaterController {
+            let item = appMenu.addItem(
+                withTitle: "Check for Updates…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+            item.target = updaterController
+        }
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide SplatShell", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(withTitle: "Quit SplatShell", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
