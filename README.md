@@ -6,7 +6,7 @@ The renderer and the editing tools are SuperSplat's. SplatShell adds the window,
 
 ## What it does
 
-- Opens `.ply`, `.spz`, `.splat`, `.sog` and `.ssproj` from File > Open or from Finder ("Open With")
+- Opens `.ply`, `.spz`, `.splat`, `.sog` and `.ssproj` from File > Open, from Finder ("Open With") or by dropping them on the window
 - Reads files from disk on demand. An 11 GB PLY is never copied or held in memory as a file
 - Serves the bundled SuperSplat build from inside the app. Nothing listens on a port
 - Draws SuperSplat's unsorted stochastic mode while the camera moves and a sorted frame when it stops, which keeps very large scenes at display rate
@@ -18,6 +18,10 @@ On an M4 Max with 64 GB, a 48 million splat scene (11 GB, SH degree 3) loads in 
 
 - Apple silicon Mac
 - A macOS version whose WebKit has WebGPU. Developed and tested on macOS 26
+
+## Download
+
+Get the latest notarized DMG from [Releases](https://github.com/Saqoosha/SplatShell/releases/latest). The app checks for updates itself (Check for Updates… in the app menu).
 
 ## Build
 
@@ -40,3 +44,7 @@ Z-up scenes open lying on their side. The app does not rotate them for you; set 
 
 - [SuperSplat](https://github.com/playcanvas/supersplat) by PlayCanvas, MIT License. Its license is included in the app bundle
 - [Sparkle](https://github.com/sparkle-project/Sparkle), MIT License
+
+## License
+
+MIT. See [LICENSE](LICENSE).
