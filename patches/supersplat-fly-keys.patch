@@ -1,0 +1,210 @@
+diff --git a/src/shortcut-manager.ts b/src/shortcut-manager.ts
+index 73ba7d0..85e0f93 100644
+--- a/src/shortcut-manager.ts
++++ b/src/shortcut-manager.ts
+@@ -75,6 +75,30 @@ const defaultShortcuts: Record<string, ShortcutBinding> = {
+     'camera.modifier.slow': { codes: ['AltLeft', 'AltRight'], held: true, shift: 'optional' }
+ };
+ 
++// Fly keys by physical position. 'dvorak' is for a keyboard that is Dvorak in
++// hardware: it reports the codes of the letters printed on it, so the keys
++// under the QWERTY WASD positions arrive as Comma, KeyA, KeyO and KeyE.
++const flyKeyLayouts: Record<string, Record<string, string>> = {
++    qwerty: {
++        'camera.fly.forward': 'KeyW',
++        'camera.fly.left': 'KeyA',
++        'camera.fly.backward': 'KeyS',
++        'camera.fly.right': 'KeyD',
++        'camera.fly.down': 'KeyQ',
++        'camera.fly.up': 'KeyE'
++    },
++    dvorak: {
++        'camera.fly.forward': 'Comma',
++        'camera.fly.left': 'KeyA',
++        'camera.fly.backward': 'KeyO',
++        'camera.fly.right': 'KeyE',
++        'camera.fly.down': 'Quote',
++        'camera.fly.up': 'Period'
++    }
++};
++
++const flyKeyIds = Object.keys(flyKeyLayouts.qwerty);
++
+ class ShortcutManager {
+     private bindings: Record<string, ShortcutBinding>;
+ 
+@@ -82,12 +106,26 @@ class ShortcutManager {
+         // Clone the defaults so they can be modified without affecting the originals
+         this.bindings = {};
+         for (const id in defaultShortcuts) {
+-            this.bindings[id] = { ...defaultShortcuts[id] };
++            const binding = defaultShortcuts[id];
++            this.bindings[id] = { ...binding, codes: binding.codes && [...binding.codes] };
+         }
+ 
++        // Fly keys take part only in fly mode, so the Dvorak set (',' '.' 'o')
++        // leaves the timeline and flood selection keys alone in orbit mode.
++        // They register first so that in fly mode they win over those keys.
++        const flying = () => events.invoke('camera.controlMode') === 'fly';
++        for (const id of flyKeyIds) {
++            this.bindings[id].active = flying;
++        }
++        this.setFlyKeyLayout((window as { flyKeyLayout?: string }).flyKeyLayout);
++        window.addEventListener('flykeylayoutchange', () => {
++            this.setFlyKeyLayout((window as { flyKeyLayout?: string }).flyKeyLayout);
++        });
++
+         // Create shortcuts and register all bindings
+         const shortcuts = new Shortcuts(events);
+-        for (const id in this.bindings) {
++        const ids = [...flyKeyIds, ...Object.keys(this.bindings).filter((id) => !flyKeyIds.includes(id))];
++        for (const id of ids) {
+             const binding = this.bindings[id];
+             shortcuts.register({
+                 event: id,
+@@ -98,11 +136,23 @@ class ShortcutManager {
+                 alt: binding.alt,
+                 held: binding.held,
+                 repeat: binding.repeat,
+-                capture: binding.capture
++                capture: binding.capture,
++                active: binding.active
+             });
+         }
+     }
+ 
++    /**
++     * Switch the fly keys between layouts ('qwerty', 'dvorak'). The code arrays
++     * are shared with the registered shortcuts, so they are changed in place.
++     */
++    setFlyKeyLayout(name?: string) {
++        const layout = flyKeyLayouts[name] ?? flyKeyLayouts.qwerty;
++        for (const id of flyKeyIds) {
++            this.bindings[id].codes.splice(0, Infinity, layout[id]);
++        }
++    }
++
+     /**
+      * Get a shortcut binding by its event ID.
+      */
+@@ -133,8 +183,8 @@ class ShortcutManager {
+         } else if (keyDisplay === 'Escape') {
+             keyDisplay = 'Esc';
+         } else if (keyDisplay.startsWith('Key')) {
+-            // Physical key codes like 'KeyW' -> 'W'
+-            keyDisplay = keyDisplay.slice(3);
++            // Physical key codes like 'KeyW' -> 'W' on QWERTY
++            keyDisplay = keyCodeLabel(keyDisplay);
+         } else if (keyDisplay.length === 1) {
+             keyDisplay = keyDisplay.toUpperCase();
+         }
+@@ -145,4 +195,23 @@ class ShortcutManager {
+     }
+ }
+ 
+-export { ShortcutManager };
++// Label for a physical key code as printed on the user's keyboard. Bindings by
++// code keep their position on any layout, so on Dvorak 'KeyW' is the key
++// labelled ','. A host app can supply the current layout's labels as
++// window.keyboardLayoutLabels ({ KeyW: ',' }); without it, QWERTY is assumed.
++const keyCodeLabel = (code: string): string => {
++    const labels = (window as { keyboardLayoutLabels?: Record<string, string> }).keyboardLayoutLabels;
++    const label = labels?.[code] ?? punctuationLabels[code];
++    if (label) return label.toUpperCase();
++    return code.startsWith('Key') ? code.slice(3) : code;
++};
++
++const punctuationLabels: Record<string, string> = {
++    Comma: ',',
++    Period: '.',
++    Quote: "'",
++    Semicolon: ';',
++    Slash: '/'
++};
++
++export { ShortcutManager, keyCodeLabel, flyKeyIds };
+diff --git a/src/shortcuts.ts b/src/shortcuts.ts
+index fdf7381..101ea62 100644
+--- a/src/shortcuts.ts
++++ b/src/shortcuts.ts
+@@ -20,6 +20,9 @@ interface ShortcutBinding {
+     held?: boolean;
+     repeat?: boolean; // whether to fire on keyboard repeat events (for non-held shortcuts)
+     capture?: boolean; // whether to use capture phase for the event listener
++    // when set and false, a key press is left to the shortcuts after this one;
++    // key releases always match, so a held state cannot get stuck
++    active?: () => boolean;
+ }
+ 
+ /**
+@@ -125,6 +128,8 @@ class Shortcuts {
+                         options.codes?.some((c) => c === e.code)) ??
+                     false;
+ 
++                if (keyMatches && down && options.active && !options.active()) continue;
++
+                 if (keyMatches && (options.capture ?? false) === capture && ctrlMatch && shiftMatch && altMatch) {
+                     // consume the event
+                     e.stopPropagation();
+diff --git a/src/ui/shortcuts-popup.ts b/src/ui/shortcuts-popup.ts
+index ce1cc9b..9f7e8c9 100644
+--- a/src/ui/shortcuts-popup.ts
++++ b/src/ui/shortcuts-popup.ts
+@@ -1,6 +1,7 @@
+ import { Container, Label } from '@playcanvas/pcui';
+ 
+ import type { Events } from '../events';
++import { keyCodeLabel } from '../shortcut-manager';
+ import type { ShortcutManager } from '../shortcut-manager';
+ 
+ import { i18n } from './localization';
+@@ -13,7 +14,8 @@ interface ShortcutDisplayItem {
+ }
+ 
+ interface HintDisplayItem {
+-    displayKey: string; // what to show in the key column
++    displayKey?: string; // what to show in the key column
++    ids?: string[]; // or shortcuts bound by physical key, shown as the user's keyboard labels them
+     localeKey: string; // localization key for the action description
+ }
+ 
+@@ -37,8 +39,11 @@ const popupConfig: Record<string, CategoryConfig> = {
+         localeKey: 'popup.shortcuts.camera',
+         shortcuts: [],
+         hints: [
+-            { displayKey: 'W / A / S / D', localeKey: 'popup.shortcuts.fly-movement' },
+-            { displayKey: 'Q / E', localeKey: 'popup.shortcuts.fly-vertical' },
++            {
++                ids: ['camera.fly.forward', 'camera.fly.left', 'camera.fly.backward', 'camera.fly.right'],
++                localeKey: 'popup.shortcuts.fly-movement'
++            },
++            { ids: ['camera.fly.down', 'camera.fly.up'], localeKey: 'popup.shortcuts.fly-vertical' },
+             { displayKey: 'Shift', localeKey: 'popup.shortcuts.fly-speed-fast' },
+             { displayKey: 'Alt', localeKey: 'popup.shortcuts.fly-speed-slow' }
+         ]
+@@ -217,10 +222,24 @@ class ShortcutsPopup extends Container {
+             // Add hints for this category (non-shortcut display items)
+             if (config.hints) {
+                 for (const hint of config.hints) {
++                    const keyText = () =>
++                        hint.displayKey ??
++                        hint.ids.map((id) => keyCodeLabel(shortcutManager.get(id)?.codes?.[0] ?? '')).join(' / ');
+                     const key = new Label({
+                         class: 'shortcut-key',
+-                        text: hint.displayKey
++                        text: keyText()
+                     });
++                    if (hint.ids) {
++                        // the host app fires these when the keyboard layout or fly keys change
++                        for (const name of ['keyboardlayoutchange', 'flykeylayoutchange']) {
++                            // after the ShortcutManager's own listener has applied the change
++                            window.addEventListener(name, () => {
++                                queueMicrotask(() => {
++                                    key.text = keyText();
++                                });
++                            });
++                        }
++                    }
+ 
+                     const action = new Label({
+                         class: 'shortcut-action'

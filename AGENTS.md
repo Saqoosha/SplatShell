@@ -52,7 +52,7 @@ $B --snapshot /tmp/x.png --eval 'localStorage.removeItem("supersplat:preferences
 - **SuperSplat の既定 `auto` は巨大シーンでカクつく**。並べ替えありの 1 フレームが 60 ms を超えたときだけ移動中の stochastic 描画に切り替わる。40〜50 ms の視点では切り替わらず 20 fps 前後になる。なので保存された設定がないとき、起動時に `movement` を設定している。SuperSplat はこの値を Preferences と一緒に保存するので、保存値があるときは触らない（ユーザーが Preferences で選んだ値が残る）。`--stochastic` を付けたときだけ上書きする
 - **`disabled` にすると SuperSplat が GPU タイマーを止める**。`scene.frameTimings.gpu` が 0 になる。`--bench` の並べ替え計測は `auto` のまま `scene.autoEngageMs = 1e9` にしてタイマーを生かしている
 - **読み込み直後にシーンが見えないことがある**。原点から遠いデータではカメラの視界に入らない。開いたあと `camera.focus` を発火している。外れ値の splat があると `camera.focus` は引きすぎる
-- **SuperSplat の Fly（ドローン）移動キーは物理キー位置（`KeyW` など）で読む**。Dvorak でも QWERTY の WASD の位置で動く（刻印は `,` `A` `O` `E`、上下は `'` `.`）。動作は変えず、ショートカット一覧の表示だけ配列に合わせている（`patches/supersplat-keyboard-layout-labels.patch`）
+- **Fly（ドローン）移動キーは物理キー位置（`KeyW` など）で照合される**。macOS の Dvorak 配列なら QWERTY の WASD の位置でそのまま動き、表示だけ配列の刻印に合わせている（`KeyboardLayout.swift` → `window.keyboardLayoutLabels`）。ハードウェアで Dvorak のキーボードは刻印どおりのキーコードを送るので、ソフトからは QWERTY と区別できない。なので View > Dvorak Keyboard for Fly Keys（`UserDefaults` の `flyKeyLayout`）で割り当てを `,` `A` `O` `E`（上下 `'` `.`）に切り替える。この組は `,` `.`（タイムラインのフレーム送り）と `O`（Flood 選択）とぶつかるので、Fly の割り当ては Fly カメラのときだけ有効にして、先に照合させている。Orbit では元の機能が効く。押下だけを判定し、離したときは常に照合する（押しっぱなし状態が残らないように）
 - **メニューに Undo / Redo / Select All を足さない**。キー入力がメニューに取られてページに届かなくなる。SuperSplat はそれらのキーを自前の編集履歴と選択に使う
 - **Sparkle は `.app` の外では動かない**。`.build/release/SplatShell` を直接実行すると `Bundle.main.bundleIdentifier` が nil なので、アップデータを作らない。`--bench` `--snapshot` `--eval` `--downloads` のときも作らない（更新ダイアログが自動実行の邪魔になる）
 - **独自スキーム `splat://app` は secure context 扱いで、WebGPU が使える**（macOS 26.6 で確認）。HTTP サーバに戻す必要はない

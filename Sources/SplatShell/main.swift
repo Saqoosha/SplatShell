@@ -236,7 +236,7 @@ let benchScript = #"""
 })();
 """#
 
-final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
     WKDownloadDelegate
 {
     let options: Options
@@ -282,6 +282,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         // SuperSplat binds the fly keys by position; label them as the user's keyboard does
         config.userContentController.addUserScript(
             WKUserScript(source: KeyboardLayout.script(), injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        config.userContentController.addUserScript(
+            WKUserScript(source: KeyboardLayout.flyKeysScript(), injectionTime: .atDocumentStart, forMainFrameOnly: true))
         DistributedNotificationCenter.default().addObserver(
             self, selector: #selector(keyboardLayoutChanged(_:)),
             name: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String), object: nil)
@@ -337,6 +339,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     @objc func keyboardLayoutChanged(_ notification: Notification) {
         webView?.evaluateJavaScript(KeyboardLayout.script(), completionHandler: nil)
+    }
+
+    @objc func toggleDvorakFlyKeys(_ sender: NSMenuItem) {
+        KeyboardLayout.flyKeys = KeyboardLayout.flyKeys == "dvorak" ? "qwerty" : "dvorak"
+        webView?.evaluateJavaScript(KeyboardLayout.flyKeysScript(), completionHandler: nil)
+    }
+
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(toggleDvorakFlyKeys(_:)) {
+            item.state = KeyboardLayout.flyKeys == "dvorak" ? .on : .off
+        }
+        return true
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -616,6 +630,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         editItem.submenu = editMenu
         main.addItem(editItem)
+
+        let viewItem = NSMenuItem()
+        let viewMenu = NSMenu(title: "View")
+        viewMenu.addItem(withTitle: "Dvorak Keyboard for Fly Keys", action: #selector(toggleDvorakFlyKeys(_:)), keyEquivalent: "")
+        viewItem.submenu = viewMenu
+        main.addItem(viewItem)
 
         let windowItem = NSMenuItem()
         let windowMenu = NSMenu(title: "Window")
