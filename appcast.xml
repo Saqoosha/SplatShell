@@ -6,6 +6,27 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>0.2.0</title>
+            <pubDate>Wed, 11 Nov 2026 14:13:47 +0900</pubDate>
+            <link>https://github.com/Saqoosha/SplatShell</link>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="markdown"><![CDATA[### Features
+- View > Dvorak Keyboard for Fly Keys: for keyboards that are Dvorak in hardware, fly with the keys at the usual WASD positions (labelled `,` `A` `O` `E`, with `'` `.` for down and up). In orbit mode those keys keep their usual roles (frame stepping and flood selection)
+- The fly keys in the Keyboard Shortcuts list are shown as printed on your keyboard, following the active macOS layout (Dvorak, AZERTY and others)
+
+### Changes
+- The app is now MIT licensed
+]]></description>
+            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.2.0/SplatShell-0.2.0.dmg" length="6980536" type="application/octet-stream" sparkle:edSignature="jSfflHqC6JzQZ5S90BfXhZFLIDqMR6TXTl00B/QX5xBUmOOUGKp0x7B32dMVUyFk9TdKoHdkDfgwmswwZRrGDA=="/>
+            <sparkle:deltas>
+                <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.2.0/SplatShell4-3.delta" sparkle:deltaFrom="3" length="34918" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Cb4ErhvhyOtoKFCKf5Ta1OgWvjpz3owIlrNrFd/Ep2qkcPyQPGl/D/AL7oUzbnBta6ZP3t7Z76pme0/y2E2wCg=="/>
+                <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.2.0/SplatShell4-2.delta" sparkle:deltaFrom="2" length="36554" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="IIr+A+mGZZhOezBKUPXqN7/UIk/eD75l1DgwpLumWE8sKG/DZYRCit6V77vUBHwinpm00BwRaTZ6wk1OWc1uAw=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.1.1</title>
             <pubDate>Wed, 11 Nov 2026 13:43:23 +0900</pubDate>
             <link>https://github.com/Saqoosha/SplatShell</link>
@@ -19,7 +40,7 @@
 ### Changes
 - The app binary no longer carries search paths into the build machine's developer tools
 ]]></description>
-            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.1/SplatShell-0.1.1.dmg" length="6971743" type="application/octet-stream" sparkle:edSignature="vkmFqKvYOxe8mEWWpLbfklNZQ+ao7F630fAv2BJXZekCjqzXkPparrmgZwCzplLLYj0hclHQOUX3WcEfVNDeBw=="/>
+            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.2.0/SplatShell-0.1.1.dmg" length="6971743" type="application/octet-stream" sparkle:edSignature="vkmFqKvYOxe8mEWWpLbfklNZQ+ao7F630fAv2BJXZekCjqzXkPparrmgZwCzplLLYj0hclHQOUX3WcEfVNDeBw=="/>
             <sparkle:deltas>
                 <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.1/SplatShell3-2.delta" sparkle:deltaFrom="2" length="20674" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="PKWcmBOReUM2kcY+/dB8AHQptKhwK5mvJSeDb2lsQ0tvJ0DFBVKQU2VBrabCIhCHyzjDOREvc5XjgtrXOlFlDA=="/>
             </sparkle:deltas>
@@ -46,7 +67,7 @@
 - SuperSplat builds an exported file in memory before saving it, so an uncompressed export of a very large scene may not fit
 - Z-up scenes open lying on their side; set the rotation in SuperSplat's Transform panel
 ]]></description>
-            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.1/SplatShell-0.1.0.dmg" length="6968936" type="application/octet-stream" sparkle:edSignature="tFjX5ZdONypGsR4jJm5SEYOeJAYCFni71Wn+o1l1l2h6J2pqEljWsy+cvHJmQYTqExyBNPXrNSB3g5/NcREOCA=="/>
+            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.2.0/SplatShell-0.1.0.dmg" length="6968936" type="application/octet-stream" sparkle:edSignature="tFjX5ZdONypGsR4jJm5SEYOeJAYCFni71Wn+o1l1l2h6J2pqEljWsy+cvHJmQYTqExyBNPXrNSB3g5/NcREOCA=="/>
         </item>
     </channel>
 </rss>
