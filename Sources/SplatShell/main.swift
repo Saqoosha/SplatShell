@@ -343,7 +343,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
     }
 
-    func open(_ urls: [URL]) {
+    func open(_ requested: [URL]) {
+        // WebKit hands the page an empty File for a path that does not exist,
+        // and SuperSplat then reports a malformed header, which reads as a
+        // broken file rather than a missing one.
+        let missing = requested.filter { !FileManager.default.isReadableFile(atPath: $0.path) }
+        let urls = requested.filter { !missing.contains($0) }
+        if !missing.isEmpty {
+            emit("MISSING \(missing.map(\.path).joined(separator: ", "))")
+            if window != nil, options.bench == nil {
+                let alert = NSAlert()
+                alert.messageText = missing.count == 1 ? "File not found" : "Files not found"
+                alert.informativeText = missing.map(\.path).joined(separator: "\n")
+                alert.beginSheetModal(for: window)
+            }
+        }
         guard !urls.isEmpty else { return }
         guard pageReady else {
             queuedFiles += urls
@@ -517,6 +531,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     func startBench() {
         guard let file = options.bench else { return }
+        guard FileManager.default.isReadableFile(atPath: file.path) else { return fail("file not found: \(file.path)") }
         filesForNextChooser = [file]
         webView.evaluateJavaScript("window.__bench.runAll(); true") { _, error in
             if let error { emit("ERROR bench: \(error.localizedDescription)") }

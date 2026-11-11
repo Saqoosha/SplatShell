@@ -41,6 +41,16 @@ bin="$(swift build -c release --show-bin-path)"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources/web" "$app/Contents/Frameworks"
 cp "$bin/SplatShell" "$app/Contents/MacOS/SplatShell"
+# SwiftPM adds rpaths into the build machine's toolchains (Xcode, and the
+# Metal Toolchain's temporary mount). The app loads Swift from /usr/lib/swift
+# and Sparkle from its own Frameworks folder, so only those two stay.
+otool -l "$app/Contents/MacOS/SplatShell" | awk '/cmd LC_RPATH/ { getline; getline; print $2 }' |
+    while read -r rpath; do
+        case "$rpath" in
+            /usr/lib/swift | @executable_path/../Frameworks) ;;
+            *) install_name_tool -delete_rpath "$rpath" "$app/Contents/MacOS/SplatShell" ;;
+        esac
+    done
 cp "$root/Resources/Info.plist" "$app/Contents/Info.plist"
 cp "$root/Resources/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
 # ditto keeps the framework's internal symlinks (Versions/Current and friends)
