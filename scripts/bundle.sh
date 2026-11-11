@@ -21,14 +21,26 @@ identity="${SIGN_IDENTITY:--}"
 cd "$root"
 
 if [[ -n "${SUPERSPLAT_DIR:-}" ]]; then
+    # used as is: patches/ is not applied
     supersplat="$SUPERSPLAT_DIR"
 else
     supersplat="$root/.build/supersplat"
-    if [[ "$(git -C "$supersplat" rev-parse HEAD 2>/dev/null || true)" != "$SUPERSPLAT_COMMIT" ]]; then
+    # The pinned commit plus patches/*.patch, applied in name order. A change
+    # to either starts again from a clean checkout.
+    shopt -s nullglob
+    patches=("$root"/patches/*.patch)
+    shopt -u nullglob
+    stamp="$SUPERSPLAT_COMMIT $(cat /dev/null "${patches[@]}" | shasum -a 256 | cut -c1-16)"
+    if [[ "$(cat "$supersplat/.splatshell-stamp" 2>/dev/null || true)" != "$stamp" ]]; then
         rm -rf "$supersplat"
         git init -q "$supersplat"
         git -C "$supersplat" fetch -q --depth 1 "$SUPERSPLAT_REPO" "$SUPERSPLAT_COMMIT"
         git -C "$supersplat" checkout -q FETCH_HEAD
+        for patch in "${patches[@]}"; do
+            git -C "$supersplat" apply "$patch"
+        done
+        (cd "$supersplat" && npm ci && npm run build)
+        echo "$stamp" > "$supersplat/.splatshell-stamp"
     fi
 fi
 if [[ ! -f "$supersplat/dist/index.html" ]]; then

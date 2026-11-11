@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import Sparkle
 import WebKit
 
@@ -278,6 +279,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "shell")
+        // SuperSplat binds the fly keys by position; label them as the user's keyboard does
+        config.userContentController.addUserScript(
+            WKUserScript(source: KeyboardLayout.script(), injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        DistributedNotificationCenter.default().addObserver(
+            self, selector: #selector(keyboardLayoutChanged(_:)),
+            name: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String), object: nil)
         config.userContentController.addUserScript(
             WKUserScript(
                 source: "window.__shellConfig = { stochastic: \(options.stochastic.map { "'\($0)'" } ?? "null") };",
@@ -327,6 +334,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+
+    @objc func keyboardLayoutChanged(_ notification: Notification) {
+        webView?.evaluateJavaScript(KeyboardLayout.script(), completionHandler: nil)
+    }
 
     func application(_ application: NSApplication, open urls: [URL]) {
         open(urls)
