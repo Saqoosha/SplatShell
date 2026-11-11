@@ -15,7 +15,11 @@ SuperSplat を選んだ理由：巨大シーンを滑らかに出す鍵は LOD �
 - `scripts/release.sh` `package_dmg.sh` `update_appcast.sh` `detach_dmg_mounts.sh`: リリース。`/release` コマンドから使う
 - `Sources/SplatShell/KeyboardLayout.swift`: 物理キー位置 → 今のキーボード配列での刻印の対応を作り、`window.keyboardLayoutLabels` としてページに渡す。配列が切り替わると送り直して `keyboardlayoutchange` イベントを出す
 - `patches/*.patch`: SuperSplat に当てるパッチ。`bundle.sh` が固定コミットを取得したあと名前順に当てる。固定コミットかパッチが変わると `.build/supersplat` を取り直す（`.splatshell-stamp` で判定）。パッチを作り直すときは `.build/supersplat` で編集して `git diff > patches/<name>.patch`。`SUPERSPLAT_DIR` を指定したときは当てない
-- Sparkle と SuperSplat はどちらもバージョン固定（`Package.swift`、`scripts/bundle.sh`）。上げるときは単独のコミットにする。SuperSplat を上げたらパッチが当たるか確かめる
+- Sparkle と SuperSplat はどちらもバージョン固定（`Package.swift`、`scripts/bundle.sh`）。上げるときは単独のコミットにする
+- SuperSplat の新リリースは `.github/workflows/follow-supersplat.yml` が毎日 00:17 UTC に確かめる。今の固定より新しいタグがあれば `scripts/follow_supersplat.sh` が固定を動かし、macOS ランナーで `bundle.sh` を丸ごと通して、結果つきの PR（ブランチ `supersplat/<tag>`）を作る。ビルドが失敗しても PR は作り、タイトルに `(build failed)` が付く。ランナーは描画できないので、マージ前に手元で大きいシーンを開いて飛ぶ。公開はマージ後に Mac で `/release`。鍵は GitHub に置いていない（自動公開にしないと決めた）
+- 追うのはリリースタグだけ。固定がリリースより先のコミット（main から拾った修正）なら戻さない。PR を作るにはリポジトリ設定 Actions > General の「Allow GitHub Actions to create and approve pull requests」が要る
+- パッチが当たらないときは `.build/supersplat` で新しいタグの上に手で当て直して `git diff > patches/<name>.patch`。`git apply` は前後の行が一致しないと失敗する（v3.7.0 に今のパッチを当てると `src/shortcuts.ts` で失敗する、と確認済み）
+- 手元での空打ち：`DRY_RUN=1 ./scripts/follow_supersplat.sh`（新しいリリースがなければ何もしない）。`TAG=<tag> FORCE=1 DRY_RUN=1` で任意のタグを試せる。空打ちは固定を書き換えたままにするので、終わったら戻す
 
 ## コマンド
 

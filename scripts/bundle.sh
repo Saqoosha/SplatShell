@@ -9,8 +9,9 @@
 #                   and a secure timestamp, which notarization requires.
 set -euo pipefail
 
-# Rendering was measured against this commit (3.7.0 plus a few fixes). Bump it
-# in its own commit and rerun the --bench checks in AGENTS.md.
+# Moved to each new SuperSplat release by scripts/follow_supersplat.sh, through
+# a pull request. Bumping it by hand: its own commit, and rerun the --bench
+# checks in AGENTS.md. The line format is read by that script.
 SUPERSPLAT_REPO="https://github.com/playcanvas/supersplat.git"
 SUPERSPLAT_COMMIT="c061d0d6a56c730487f90e7683eee09422864e56"
 
