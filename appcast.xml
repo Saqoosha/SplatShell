@@ -1,0 +1,33 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>SplatShell Changelog</title>
+        <link>https://github.com/Saqoosha/SplatShell</link>
+        <description>Most recent changes with links to updates.</description>
+        <language>en</language>
+        <item>
+            <title>0.1.0</title>
+            <pubDate>Wed, 11 Nov 2026 13:21:57 +0900</pubDate>
+            <link>https://github.com/Saqoosha/SplatShell</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="markdown"><![CDATA[First release. SplatShell is a native macOS app for viewing and editing 3D Gaussian Splatting scenes, built around [SuperSplat](https://github.com/playcanvas/supersplat).
+
+### Features
+- Open `.ply`, `.spz`, `.splat`, `.sog` and `.ssproj` files from File > Open or from Finder
+- Files are read from disk on demand, so scenes of tens of millions of splats open without a server or a browser tab
+- Very large scenes stay at display rate while the camera moves: the app draws SuperSplat's fast unsorted mode during motion and a sorted frame when the camera stops. The mode can be changed in SuperSplat's Preferences
+- Save and export through a standard save panel
+- Links inside SuperSplat open in your default browser
+- Automatic updates with Sparkle (Check for Updates… in the app menu)
+
+### Known limitations
+- SuperSplat builds an exported file in memory before saving it, so an uncompressed export of a very large scene may not fit
+- Z-up scenes open lying on their side; set the rotation in SuperSplat's Transform panel
+]]></description>
+            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.0/SplatShell-0.1.0.dmg" length="6968936" type="application/octet-stream" sparkle:edSignature="tFjX5ZdONypGsR4jJm5SEYOeJAYCFni71Wn+o1l1l2h6J2pqEljWsy+cvHJmQYTqExyBNPXrNSB3g5/NcREOCA=="/>
+        </item>
+    </channel>
+</rss>
