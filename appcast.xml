@@ -6,6 +6,25 @@
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
         <item>
+            <title>0.1.1</title>
+            <pubDate>Wed, 11 Nov 2026 13:43:23 +0900</pubDate>
+            <link>https://github.com/Saqoosha/SplatShell</link>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="markdown"><![CDATA[### Bug Fixes
+- Opening a file that no longer exists now says "File not found" instead of reporting a malformed PLY header
+
+### Changes
+- The app binary no longer carries search paths into the build machine's developer tools
+]]></description>
+            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.1/SplatShell-0.1.1.dmg" length="6971743" type="application/octet-stream" sparkle:edSignature="vkmFqKvYOxe8mEWWpLbfklNZQ+ao7F630fAv2BJXZekCjqzXkPparrmgZwCzplLLYj0hclHQOUX3WcEfVNDeBw=="/>
+            <sparkle:deltas>
+                <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.1/SplatShell3-2.delta" sparkle:deltaFrom="2" length="20674" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977808" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="PKWcmBOReUM2kcY+/dB8AHQptKhwK5mvJSeDb2lsQ0tvJ0DFBVKQU2VBrabCIhCHyzjDOREvc5XjgtrXOlFlDA=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.1.0</title>
             <pubDate>Wed, 11 Nov 2026 13:21:57 +0900</pubDate>
             <link>https://github.com/Saqoosha/SplatShell</link>
@@ -27,7 +46,7 @@
 - SuperSplat builds an exported file in memory before saving it, so an uncompressed export of a very large scene may not fit
 - Z-up scenes open lying on their side; set the rotation in SuperSplat's Transform panel
 ]]></description>
-            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.0/SplatShell-0.1.0.dmg" length="6968936" type="application/octet-stream" sparkle:edSignature="tFjX5ZdONypGsR4jJm5SEYOeJAYCFni71Wn+o1l1l2h6J2pqEljWsy+cvHJmQYTqExyBNPXrNSB3g5/NcREOCA=="/>
+            <enclosure url="https://github.com/Saqoosha/SplatShell/releases/download/v0.1.1/SplatShell-0.1.0.dmg" length="6968936" type="application/octet-stream" sparkle:edSignature="tFjX5ZdONypGsR4jJm5SEYOeJAYCFni71Wn+o1l1l2h6J2pqEljWsy+cvHJmQYTqExyBNPXrNSB3g5/NcREOCA=="/>
         </item>
     </channel>
 </rss>
