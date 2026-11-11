@@ -19,7 +19,8 @@ SuperSplat を選んだ理由：巨大シーンを滑らかに出す鍵は LOD �
 - SuperSplat の新リリースは `.github/workflows/follow-supersplat.yml` が毎日 00:17 UTC に確かめる。今の固定より新しいタグがあれば `scripts/follow_supersplat.sh` が固定を動かし、macOS ランナーで `bundle.sh` を丸ごと通して、結果つきの PR（ブランチ `supersplat/<tag>`）を作る。ビルドが失敗しても PR は作り、タイトルに `(build failed)` が付く。ランナーは描画できないので、マージ前に手元で大きいシーンを開いて飛ぶ。公開はマージ後に Mac で `/release`。鍵は GitHub に置いていない（自動公開にしないと決めた）
 - 追うのはリリースタグだけ。固定がリリースより先のコミット（main から拾った修正）なら戻さない。PR を作るにはリポジトリ設定 Actions > General の「Allow GitHub Actions to create and approve pull requests」が要る
 - パッチが当たらないときは `.build/supersplat` で新しいタグの上に手で当て直して `git diff > patches/<name>.patch`。`git apply` は前後の行が一致しないと失敗する（v3.7.0 に今のパッチを当てると `src/shortcuts.ts` で失敗する、と確認済み）
-- 手元での空打ち：`DRY_RUN=1 ./scripts/follow_supersplat.sh`（新しいリリースがなければ何もしない）。`TAG=<tag> FORCE=1 DRY_RUN=1` で任意のタグを試せる。空打ちは固定を書き換えたままにするので、終わったら戻す
+- ワークフローは check（判定、読み取り権限）→ build（権限なし・トークンなし・git の認証情報も残さない）→ propose（書き込み権限、SuperSplat のコードは実行しない）の 3 ジョブ。SuperSplat と npm 依存を書き込み可能なトークンの横で走らせないため
+- 手元での試し：`./scripts/follow_supersplat.sh`（check と build だけ、push も PR もしない。新しいリリースがなければ何もしない）。`TAG=<tag> FORCE=1` で任意のタグを試せる。固定を書き換えたままにするので、終わったら戻す
 
 ## コマンド
 

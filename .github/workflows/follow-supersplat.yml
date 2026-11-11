@@ -2,6 +2,10 @@ name: Follow SuperSplat releases
 
 # Daily: when SuperSplat has a release newer than the pinned commit, build it
 # with our patches and open a pull request. See scripts/follow_supersplat.sh.
+#
+# The build runs SuperSplat's code and its npm dependencies, so it gets no
+# token and no stored git credentials. Only the propose job can write, and it
+# runs nothing from SuperSplat: it reads the build result as text.
 
 on:
   schedule:
@@ -16,27 +20,76 @@ on:
         type: boolean
         default: false
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 concurrency:
   group: follow-supersplat
 
 jobs:
-  follow:
+  check:
     runs-on: macos-15
-    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      propose: ${{ steps.check.outputs.propose }}
+      tag: ${{ steps.check.outputs.tag }}
+      sha: ${{ steps.check.outputs.sha }}
+      current: ${{ steps.check.outputs.current }}
+      branch: ${{ steps.check.outputs.branch }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-
-      - name: Propose the latest SuperSplat release
+          persist-credentials: false
+      - id: check
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
           FORCE: ${{ inputs.force && '1' || '' }}
-        run: ./scripts/follow_supersplat.sh
+        run: ./scripts/follow_supersplat.sh check
+
+  build:
+    needs: check
+    if: needs.check.outputs.propose == 'true'
+    runs-on: macos-15
+    timeout-minutes: 45
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - env:
+          SHA: ${{ needs.check.outputs.sha }}
+          OUT_DIR: ${{ runner.temp }}/follow
+        run: ./scripts/follow_supersplat.sh build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: follow
+          path: ${{ runner.temp }}/follow
+          if-no-files-found: ignore
+
+  propose:
+    needs: [check, build]
+    if: always() && needs.check.outputs.propose == 'true'
+    runs-on: macos-15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: follow
+          path: ${{ runner.temp }}/follow
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.check.outputs.tag }}
+          SHA: ${{ needs.check.outputs.sha }}
+          CURRENT: ${{ needs.check.outputs.current }}
+          BRANCH: ${{ needs.check.outputs.branch }}
+          OUT_DIR: ${{ runner.temp }}/follow
+        run: ./scripts/follow_supersplat.sh propose
