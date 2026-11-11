@@ -75,7 +75,7 @@ M4 Max / 64 GB、macOS 26.6、描画 1924 × 1385、SH 3 次の無圧縮 PLY、`
 
 `/release` コマンド（`.claude/commands/release.md`）に手順がある。署名は Developer ID、公証は `notarytool-profile`、配布は DMG、更新フィードは `gh-pages` ブランチの `appcast.xml`。Sparkle の EdDSA 鍵は Canopy と共用で、秘密鍵はログインキーチェーンにある。
 
-リリーススクリプト（`release.sh` `package_dmg.sh` `update_appcast.sh`）は構文確認だけで、まだ一度も実行していない。最初のリリースで `gh-pages` ブランチができる。GitHub Pages が有効になって `appcast.xml` が配信されるかは、そのとき確かめる。
+0.1.0 でこの流れを最後まで通した。`gh-pages` への最初の push で GitHub Pages が自動で有効になり、約 30 秒で `appcast.xml` が配信された。個人の Developer ID（`VCFY2GFR89`）は MBP から書き出してこの Mac（Mac Studio）にも入れてあるので、どちらでもリリースできる。アプリ内から更新が届くことは、次のバージョンを出すまで未確認。
 
 ## 残タスク
 
