@@ -13,7 +13,7 @@ set -euo pipefail
 # a pull request. Bumping it by hand: its own commit, and rerun the --bench
 # checks in AGENTS.md. The line format is read by that script.
 SUPERSPLAT_REPO="https://github.com/playcanvas/supersplat.git"
-SUPERSPLAT_COMMIT="c061d0d6a56c730487f90e7683eee09422864e56"
+SUPERSPLAT_COMMIT="919f0e5d60a94470ed8ebcbc7353a29d0a4344f0"
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 app="$root/build/SplatShell.app"
